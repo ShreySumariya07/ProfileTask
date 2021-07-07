@@ -1,10 +1,15 @@
 
 import datetime
+from typing import Optional
 from django.db import models
 from django.contrib.auth.models import AbstractUser, AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.conf import settings
 from django.db.models.fields import BigIntegerField
+from django.core.files.storage import default_storage
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+import uuid
 
 
 class MyAccountManager(BaseUserManager):
@@ -36,11 +41,16 @@ class MyAccountManager(BaseUserManager):
         return user
 
 
+def get_upload_path(self, filename):
+    return 'images/{0}/{1}'.format(self.facebook_id, filename)
+
+
 class Account(AbstractBaseUser, PermissionsMixin):
-    facebook_id = models.BigIntegerField(unique=True)
+    facebook_id = models.BigIntegerField(unique=True, primary_key=True)
     email = models.EmailField(verbose_name="email", max_length=60, unique=True)
-    name = models.CharField(max_length=300)
-    image = models.FileField(upload_to="media/", null=True, verbose_name="")
+    name = models.CharField(max_length=300, null=False, blank=False)
+    image = models.FileField(
+        upload_to=get_upload_path, null=True, verbose_name="")
 
     date_joined = models.DateTimeField(
         verbose_name="date joined", auto_now_add=True)
@@ -65,18 +75,28 @@ class Account(AbstractBaseUser, PermissionsMixin):
     def has_module_perm(self, app_label):
         return True
 
+    def delete(self, *args, **kwargs):
+        self.image.delete()
+        super().delete(*args, **kwargs)
+#
+
 
 class Profile(models.Model):
+    profile_id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4)
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
-    birth_date = models.CharField(max_length=20)
-    age = models.IntegerField(null=False)
-    gender = models.CharField(max_length=10)
+    university = models.CharField(max_length=500, null=False, blank=False)
+    birth_date = models.CharField(max_length=20, null=False, blank=False)
+    age = models.IntegerField(null=False, blank=False)
+    gender = models.CharField(max_length=10, null=False, blank=False)
     personal_description = models.CharField(max_length=1000)
-    city = models.CharField(max_length=200)
-    course = models.CharField(max_length=1000)
-    admission = models.CharField(max_length=300)
-    flat_finder = models.CharField(max_length=100)
-    sharing_preferences = models.CharField(max_length=40)
-    food_preferences = models.CharField(max_length=100)
-    cooking_skills = models.CharField(max_length=300)
+    city = models.CharField(max_length=200, null=False, blank=False)
+    course = models.CharField(max_length=1000, null=False, blank=False)
+    admission = models.CharField(max_length=300, null=False, blank=False)
+    flat_finder = models.CharField(max_length=100, null=False, blank=False)
+    sharing_preferences = models.CharField(
+        max_length=40, null=False, blank=False)
+    food_preferences = models.CharField(
+        max_length=100, null=False, blank=False)
+    cooking_skills = models.CharField(max_length=300, null=False, blank=False)
     personality = models.CharField(max_length=20000)

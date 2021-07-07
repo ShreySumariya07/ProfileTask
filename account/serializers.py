@@ -41,7 +41,7 @@ class ProfileViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['facebook_id', 'email', 'name', 'user_id', 'birth_date', 'age', 'gender', 'city', 'course', 'admission',
-                  'personal_description', 'flat_finder', 'sharing_preferences', 'food_preferences', 'cooking_skills', 'personality']
+                  'personal_description', 'flat_finder', 'sharing_preferences', 'food_preferences', 'cooking_skills', 'personality', 'university']
 
     def get_facebook_id_from_account(self, profile):
         return profile.user.facebook_id
@@ -59,21 +59,23 @@ class ProfileViewSerializer(serializers.ModelSerializer):
 
 class ProfileCreateSerializer(serializers.ModelSerializer):
 
-    user_id = serializers.PrimaryKeyRelatedField(
+    facebook_id = serializers.PrimaryKeyRelatedField(
         read_only=False, queryset=Account.objects.all())
 
     class Meta:
         model = Profile
-        fields = ['user_id', 'birth_date', 'age', 'gender', 'city', 'course', 'admission', 'personal_description',
-                  'flat_finder', 'sharing_preferences', 'food_preferences', 'cooking_skills', 'personality']
+        fields = ['facebook_id', 'birth_date', 'age', 'gender', 'city', 'course', 'admission', 'personal_description',
+                  'flat_finder', 'sharing_preferences', 'food_preferences', 'cooking_skills', 'personality', 'university']
 
     def validate(self, validated_data):
-        if Profile.objects.filter(user_id=validated_data['user_id'].id).exists():
+        print(validated_data['facebook_id'])
+
+        if Profile.objects.filter(user=validated_data['facebook_id']).exists():
             raise serializers.ValidationError(
                 {"success": False, "response": "profile already added"})
-        if validated_data['gender'] == "":
+        if validated_data['gender'] == "" or not(validated_data['gender'] == 'Male' or validated_data['gender'] == 'Female' or validated_data['gender'] == 'Non-Binary'):
             raise serializers.ValidationError(
-                {"success": False, "reponse": "Gender is a compulsory field"})
+                {"success": False, "reponse": "Gender is a compulsory field and enter a valid gender"})
         if validated_data["city"] == "":
             raise serializers.ValidationError(
                 {"success": False, "reponse": "City is a compulsory field"})
@@ -96,9 +98,12 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
         if validated_data["cooking_skills"] == "":
             raise serializers.ValidationError(
                 {"success": False, "response": "cooking skills are essential"})
+        if validated_data["university"] == "":
+            raise serializers.ValidationError(
+                {"success": False, "response": "university is an essential field and can't be null"})
 
         profile = Profile.objects.create(
-            user=validated_data['user_id'],
+            user=validated_data['facebook_id'],
             birth_date=validated_data['birth_date'],
             age=validated_data['age'],
             gender=validated_data['gender'],
@@ -110,7 +115,7 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
             sharing_preferences=validated_data["sharing_preferences"],
             food_preferences=validated_data["food_preferences"],
             cooking_skills=validated_data["cooking_skills"],
-            personality=validated_data["personality"]
+            personality=validated_data["personality"],
+            university=validated_data["university"]
         )
-
         return profile
