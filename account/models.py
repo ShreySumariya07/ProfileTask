@@ -42,16 +42,13 @@ class MyAccountManager(BaseUserManager):
 
 
 def get_upload_path(self, filename):
-    return 'images/{0}/{1}'.format(self.facebook_id, filename)
+    return 'images/{0}/{1}'.format(self.user, filename)
 
 
 class Account(AbstractBaseUser, PermissionsMixin):
     facebook_id = models.BigIntegerField(unique=True, primary_key=True)
     email = models.EmailField(verbose_name="email", max_length=60, unique=True)
     name = models.CharField(max_length=300, null=False, blank=False)
-    image = models.FileField(
-        upload_to=get_upload_path, null=True, verbose_name="")
-
     date_joined = models.DateTimeField(
         verbose_name="date joined", auto_now_add=True)
     last_login = models.DateTimeField(verbose_name="last login", auto_now=True)
@@ -75,17 +72,18 @@ class Account(AbstractBaseUser, PermissionsMixin):
     def has_module_perm(self, app_label):
         return True
 
-    def delete(self, *args, **kwargs):
-        self.image.delete()
-        super().delete(*args, **kwargs)
-#
-
 
 class Profile(models.Model):
     profile_id = models.UUIDField(
         primary_key=True, default=uuid.uuid4)
+    image = models.FileField(
+        upload_to=get_upload_path, null=True, verbose_name="")
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
-    university = models.CharField(max_length=500, null=False, blank=False)
+    university_name = models.CharField(max_length=500, null=False, blank=False)
+    university_image = models.CharField(
+        max_length=10000, null=False, blank=True)
+    university_latitude = models.FloatField()
+    university_longitude = models.FloatField()
     birth_date = models.CharField(max_length=20, null=False, blank=False)
     age = models.IntegerField(null=False, blank=False)
     gender = models.CharField(max_length=10, null=False, blank=False)
