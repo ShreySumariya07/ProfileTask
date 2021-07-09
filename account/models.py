@@ -2,7 +2,7 @@
 import datetime
 from typing import Optional
 from django.db import models
-from django.contrib.auth.models import AbstractUser, AbstractBaseUser, BaseUserManager
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.conf import settings
 from django.db.models.fields import BigIntegerField
@@ -14,25 +14,22 @@ import uuid
 
 class MyAccountManager(BaseUserManager):
 
-    def create_user(self, facebook_id, email, name, image, **extra_fields):
+    def create_user(self, facebook_id, email, name, **extra_fields):
         if not email:
             raise ValueError("Users must have an email address")
         user = self.model(
             facebook_id=facebook_id,
             email=self.normalize_email(email),
             name=name,
-            image=image,
-
         )
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, facebook_id, email, name, image, **extra_fields):
+    def create_superuser(self, facebook_id, email, name, **extra_fields):
         user = self.create_user(
             facebook_id=facebook_id,
             email=self.normalize_email(email),
             name=name,
-            image=image,
         )
         user.is_admin = True
         user.is_staff = True
@@ -42,7 +39,7 @@ class MyAccountManager(BaseUserManager):
 
 
 def get_upload_path(self, filename):
-    return 'images/{0}/{1}'.format(self.user, filename)
+    return 'images/{0}/{1}'.format(self.user.facebook_id, filename)
 
 
 class Account(AbstractBaseUser, PermissionsMixin):

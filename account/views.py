@@ -17,6 +17,7 @@ class CreateAccount(APIView):
 
     def post(self, request, *args, **kwargs):
         form = request.data
+        print(form)
         if not(form.__contains__("facebook_id")):
             return JsonResponse({"success": False, "message": "Please do pass the facebook_id as it is required field"}, status=status.HTTP_400_BAD_REQUEST)
         elif form["facebook_id"] == "":
@@ -62,8 +63,10 @@ class ViewAccount(APIView):
 class CreateProfile(APIView):
 
     def post(self, request, *args, **kwargs):
-        form = request.data
-
+        form = json.loads(request.POST.get('data'))
+        image = request.FILES
+        form['image'] = image['image']
+        print(form)
         if not(form.__contains__("facebook_id")):
             return JsonResponse({"success": False, "message": "Please login first"}, status=status.HTTP_400_BAD_REQUEST)
         elif form['facebook_id'] == "":
@@ -133,9 +136,31 @@ class CreateProfile(APIView):
         form["university_longitude"] = form["university"]["longitude"]
         serializer = ProfileCreateSerializer(data=form)
         if serializer.is_valid(raise_exception=True):
-            user = serializer.save()
+            serializer.save()
+            user = {
+                "facebook_id": serializer.data["facebook_id"],
+                "gender": serializer.data["gender"],
+                "dob": serializer.data["birth_date"],
+                "age": serializer.data["age"],
+                "personal_description": serializer.data["personal_description"],
+                "profile_photo": serializer.data["image"],
+                "personality": serializer.data['personality'].split(","),
+                "city": serializer.data["city"],
+                "course": serializer.data["course"],
+                "admission": serializer.data["admission"],
+                "cooking_skills": serializer.data["cooking_skills"],
+                "sharing_preferences": serializer.data["sharing_preferences"],
+                "food_preferences": serializer.data["food_preferences"],
+                "flat_finder": serializer.data["flat_finder"],
+                "prospective_university": {
+                    "name": serializer.data["university_name"],
+                    "photo": serializer.data["university_image"],
+                    "latitude": serializer.data["university_latitude"],
+                    "longitude": serializer.data["university_longitude"],
+                }
+            }
             data = {
-                "succes": True,
+                "success": True,
                 "user": user,
             }
             return JsonResponse(data, status=status.HTTP_201_CREATED)
